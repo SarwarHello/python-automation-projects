@@ -81,3 +81,54 @@ def create_unique_destination(destination):
             return new_destination
 
         counter += 1
+
+def organise_downloads():
+    """
+    Organise files in the Downloads folder into category folders.
+    """
+    if not DOWNLOADS_FOLDER.exists():
+        print(f"Downloads folder not found: {DOWNLOADS_FOLDER}")
+        return
+
+    moved_files = 0
+    skipped_files = 0
+
+    for item in DOWNLOADS_FOLDER.iterdir():
+
+        # Ignore folders
+        if not item.is_file():
+            continue
+
+        # Ignore this script if it is stored inside Downloads
+        if item.resolve() == Path(__file__).resolve():
+            skipped_files += 1
+            continue
+
+        category = get_category(item.suffix)
+
+        category_folder = DOWNLOADS_FOLDER / category
+        category_folder.mkdir(exist_ok=True)
+
+        destination = category_folder / item.name
+        destination = create_unique_destination(destination)
+
+        try:
+            shutil.move(str(item), str(destination))
+            print(f"Moved: {item.name} -> {category}/")
+            moved_files += 1
+
+        except PermissionError:
+            print(f"Skipped because file is currently open: {item.name}")
+            skipped_files += 1
+
+        except OSError as error:
+            print(f"Could not move {item.name}: {error}")
+            skipped_files += 1
+
+    print("\nOrganisation complete.")
+    print(f"Files moved: {moved_files}")
+    print(f"Files skipped: {skipped_files}")
+
+
+if __name__ == "__main__":
+    organise_downloads()
